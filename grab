@@ -1,0 +1,85 @@
+
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage: grab <filename.log> [-t <seconds>]
+
+Options:
+  -t <seconds>   Stop monitoring after this many seconds
+  -h, --help     Show this help message
+
+Examples:
+  grab build.log
+  grab build.log -t 60
+  grab build.log -t 2.5
+EOF
+}
+
+error() {
+    printf 'grab: %s\n' "$1" >&2
+    exit 2
+}
+
+# Require a filename.
+if (($# == 0)); then
+    usage
+    exit 2
+fi
+
+file=$1
+shift
+
+total_time=""
+
+# Parse options.
+while (($#)); do
+    case "$1" in
+        -t)
+            (($# >= 2)) || error "Option -t requires seconds."
+            [[ -z "$total_time" ]] || error "Option -t specified more than once."
+            total_time=$2
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            error "Unknown option: $1"
+            ;;
+    esac
+done
+
+# Validate the duration.
+if [[ -n "$total_time" ]]; then
+    [[ "$total_time" =~ ^[0-9]+([.][0-9]+)?$ ]] ||
+        error "Duration must be a positive number."
+
+    awk -v n="$total_time" 'BEGIN { exit !(n > 0) }' ||
+        error "Duration must be greater than zero."
+fi
+
+# Check the file.
+[[ -f "$file" ]] || {
+    printf 'grab: File not found: %s\n' "$file" >&2
+    exit 1
+}
+
+[[ -r "$file" ]] || {
+    printf 'grab: Cannot read file: %s\n' "$file" >&2
+    exit 1
+}
+
+# Follow the log in real time.
+if [[ -n "$total_time" ]]; then
+    timeout --foreground -- "$total_time" \
+        tail -n +1 -F -- "$file" || {
+            status=$?
+            [[ "$status" -eq 124 ]] || exit "$status"
+        }
+else
+    exec tail -n +1 -F -- "$file"
+fi
