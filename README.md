@@ -16,7 +16,7 @@ Monitor log files as they grow, directly from your terminal.
 ### Installation
 
 ```bash
-curl script.sh | bash
+curl https://raw.githubusercontent.com/Pratech1015/grab/refs/heads/main/install.sh | bash
 ```
 
 Installs one file at /usr/bin/grab cleanly.
@@ -38,7 +38,7 @@ Press `Ctrl+C` to stop monitoring at any time.
 ### Uninstallation
 
 ```bash
-curl unins.sh | bash
+curl https://raw.githubusercontent.com/Pratech1015/grab/refs/heads/main/uninstall.sh | bash
 ```
 
 Removes grab from your system cleanly.
